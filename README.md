@@ -29,41 +29,22 @@ DeepSeek Harness (dsh) web GUI 插件：在会话输入框中**拖入或 Ctrl+V 
 - 时间戳/文件名清洗同时对 Windows 与 POSIX 命名规则安全
 - Host 半直接 `node:fs/promises` 写字节，无 shell 依赖
 
-## 安装（本地可安装插件包）
+## 安装（官方 `dsh plugin` 方式，推荐）
 
-本仓库即一个可安装的 dsh 插件包（`@local/dsh-fileAttachment` 形态，与 `@local/file-drop` 同构）。
-
-### 方式一：链接安装（推荐，便于后续 `git pull` 更新）
+本仓库是一个标准 dsh 插件包（声明了 `dsh.bundle.patch`）。用官方 CLI 安装，pnpm 会自动处理依赖、并把本包加入 profile 的 `dsh.profile.bundles` 层：
 
 ```powershell
-# 1. 将本仓库 clone 到本地任意目录，例如
-git clone https://github.com/<你的账号>/dsh-fileAttachment.git E:\wszhoho\dsh-fileAttachment
-
-# 2. 建立 @local 软链（让 profile 的 node_modules/@local 能解析到本包）
-$link = "$env:USERPROFILE\.dsh\profiles\web\node_modules\@local\dsh-fileAttachment"
-New-Item -ItemType SymbolicLink -Path $link -Target "E:\wszhoho\dsh-fileAttachment" -Force
-
-# 3. 包内依赖软链：typert-protocol 必须与宿主共享同一模块实例
-$dep = "E:\wszhoho\dsh-fileAttachment\node_modules\@deepseek-ai"
-New-Item -ItemType Directory -Path $dep -Force
-New-Item -ItemType SymbolicLink -Path "$dep\dsh-typert-protocol" `
-  -Target "C:\Users\wszhoho\AppData\Roaming\npm\node_modules\@deepseek-ai\dsh\node_modules\@deepseek-ai\dsh-typert-protocol" -Force
-
-# 4. 在 profile 补丁文件追加注册行（保持 UTF-8 无 BOM）：
-#    - insert:
-#        - id: dsh-fileAttachment
-#          name: "@local/dsh-fileAttachment"
+# 在仓库父目录执行（<parent> 换成放置仓库的实际目录，如 E:\wszhoho）
+cd <parent>
+dsh plugin --profile web add ./dsh-fileAttachment
+# 重启 web GUI：dsh web（或从托盘重启）
 ```
 
-> 第 3 步的目标路径取决于你的 dsh 安装位置（`npm root -g` 或 `node_modules\@deepseek-ai\dsh`）。`realpath` 必须与宿主加载的 `dsh-typert-protocol` 一致（WeakMap 标记互通），否则远程方法注册会失败。
-
-### 方式二：复制到 profile packages
-
-将 `package.json`、`cordis.patch.yml`、`lib/` 复制到 `~/.dsh/profiles/web/packages/dsh-fileAttachment/`，再完成上面的软链与注册行。
-
-### 生效
-
-修改 `cordis.patch.yml` 后 dsh web 会**热重载**（不重启服务）。若未自动生效，刷新页面或切换会话，或到 `%LOCALAPPDATA%\dsh-tray\harness.log` 确认加载行。
+- `dsh plugin add` 把参数转发给 profile 目录的 pnpm 执行，`./dsh-fileAttachment` 相对路径等价 pnpm link；
+- 安装后自动进入 `dsh.profile.bundles`，无需手改 profile `package.json`；
+- 改完 `lib/*.js` 后重启 `dsh web` 即生效，适合边改边验；
+- 推送到 GitHub 后，其他人用 `dsh plugin --profile web add github:<你的账号>/dsh-fileAttachment` 即可安装；
+- 升级：`dsh plugin --profile web update dsh-fileAttachment`。
 
 ## 架构
 
@@ -72,11 +53,11 @@ packages/dsh-fileAttachment/
 ├── package.json          # dsh.client 声明 + bundle patch 指向
 ├── cordis.patch.yml      # bundle 补丁：插入本插件行
 └── lib/
-    ├── index.js          # Host 半：fileAttachment remote 服务（@Remote('save')，node:fs/promises 写盘）
+    ├── index.js          # Host 半：webServer 路由（POST /dsh-fileAttachment/save），node:fs/promises 写盘
     └── client.js         # Client 半：document 级 capture drop/paste/dragenter 监听 + 槽组件
 ```
 
-- **Host 半**：`TypertRemoteService` 子类，`@Remote('save')` 接收 `(fileName, content, sessionId)`，base64 解码后写盘；经 api-gateway 暴露为客户端 `remote.fileAttachment` 服务。
+- **Host 半**：`webServer.register` 前缀路由 `/dsh-fileAttachment`，POST `/dsh-fileAttachment/save` 接收 `{name, data(base64), sessionId}`，base64 解码后用 `node:fs/promises` 写盘到会话工作区 `.dsh-fileAttachment/`，返回 `{ok, value:{path,dir,name,size}}`。
 - **Client 半**：`conversation.composer.dock`（list 槽，同步桥状态，不渲染文本）+ `shell.overlay`（list 槽，toast 通知展示），document 级 capture 监听先于应用 bubble 监听执行。
 - **通知**：`shell.overlay` frame-wide 浮动 toast（不参与文档流，不破坏布局），4 秒自动消失。
 - **浮层**：拖入任何文件时 capture 阶段拦截应用自带「拖入图片…」DropOverlay（文案面向图片，对文档是误导）。
@@ -84,7 +65,9 @@ packages/dsh-fileAttachment/
 ## 开发说明
 
 - `lib/*.js` 使用 **UTF-8 with BOM**（项目约定）；`package.json`、`cordis.patch.yml` 使用 **UTF-8 无 BOM**。
-- Host 半 `@Remote` 签名只允许简单标识符参数（SRC 反射解析），参数名不能撞 typert lookup 定义名（`agent`/`session`）；`sessionId` 安全。
+- Host 半用 `webServer.register({ kind: 'prefix', path: '/dsh-fileAttachment', handler })` 收文件（参考 `dsh-upload-file` 同架构的 `/dsh-upload` 路由），纯 ESM 无构建，不依赖装饰器/远程反射。
+- Client 半保存用 `fetch('/dsh-fileAttachment/save', { method: 'POST', body: JSON.stringify({ name, data, sessionId }) })`，信封为 `{ ok, value | error }`。
+- 项目根 = 会话工作区（`session.header.cwd` → `sandboxPolicy.workspaceRoot` → `process.cwd()` 兜底）。
 - 50MB 上限两侧一致（client 跳过 + host 校验）。
 - 本插件取代了 `@local/file-drop` 的文档行为（原插件只插 `@原路径`，不落盘）；file-drop 包目录保留备查。
 
