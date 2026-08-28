@@ -8,8 +8,8 @@ DeepSeek Harness (dsh) web GUI 插件：在会话输入框中**拖入或 Ctrl+V 
 
 | 操作 | 行为 |
 | --- | --- |
-| 拖入/粘贴 **文档**（docx/xlsx/pdf/md/txt/rpk 等非图片文件） | 浏览器读全文 → base64 → 宿主落盘 `<会话工作区>/.dsh-file-attachment/<时间戳>-<文件名>` → 光标插入 `@绝对路径`，底部 toast 提示保存目录 |
-| 一次拖入/粘贴 **多个文件**（支持多文件） | 批量处理：逐个读取全文 → base64 → 落盘 → 在光标处一次性插入全部 `@` 引用，toast 汇总保存数量与目录 |
+| 拖入/粘贴 **文档**（docx/xlsx/pdf/md/txt/rpk 等非图片文件） | 浏览器读全文 → base64 → 宿主落盘 `<会话工作区>/.dsh-file-attachment/<时间戳>-<文件名>` → 光标插入 `@绝对路径`，成功不提示、失败简短 toast |
+| 一次拖入/粘贴 **多个文件**（支持多文件） | 批量处理：逐个读取全文 → base64 → 落盘 → 在光标处一次性插入全部 `@` 引用；全部成功不提示，部分失败仅简短提示「N 个已跳过」 |
 | 拖入 **目录** | 拒绝，toast 提示「不支持拖入目录」，不插入引用 |
 | 拖入/粘贴 **图片** | 不拦截，原样走 dsh web 既有草稿图片流程（零变化） |
 | 粘贴 **纯文本**（含从地址栏复制的目录路径字符串） | 不改写，完全原生行为 |
@@ -71,7 +71,7 @@ packages/dsh-file-attachment/
 ```
 
 - **Host 半**：`webServer.register` 前缀路由 `/dsh-file-attachment`，POST `/dsh-file-attachment/save` 接收 `{name, data(base64), sessionId}`，base64 解码后用 `node:fs/promises` 写盘到会话工作区 `.dsh-file-attachment/`，返回 `{ok, value:{path,dir,name,size}}`。
-- **Client 半**：`conversation.composer.dock`（list 槽，同步桥状态，不渲染文本）+ `shell.overlay`（list 槽，toast 通知展示），document 级 capture 监听先于应用 bubble 监听执行。
+- **Client 半**：`conversation.input.dock`（list 槽，同步桥状态，不渲染文本；经会话作用域取输入机，hero 首轮空白态也挂载）+ `shell.overlay`（list 槽，toast 通知展示），document 级 capture 监听先于应用 bubble 监听执行。
 - **通知**：`shell.overlay` frame-wide 浮动 toast（不参与文档流，不破坏布局），4 秒自动消失。
 - **浮层**：拖入任何文件时 capture 阶段拦截应用自带「拖入图片…」DropOverlay（文案面向图片，对文档是误导）。
 
