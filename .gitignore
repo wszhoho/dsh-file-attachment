@@ -1,6 +1,7 @@
 # 依赖与运行时产物
 node_modules/
 *.log
+.dsh-file-attachment/
 
 # 测试/临时
 .tmp/

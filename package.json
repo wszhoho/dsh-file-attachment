@@ -1,7 +1,15 @@
 {
-  "name": "@local/dsh-fileAttachment",
-  "version": "0.1.0",
-  "description": "拖拽/粘贴文件进输入框：图片沿用原有草稿图片流程；文档读取内容存入项目根 .dsh-fileAttachment 临时目录并插入 @绝对路径引用",
+  "name": "@wszhoho/dsh-file-attachment",
+  "version": "0.2.0",
+  "description": "拖拽/粘贴文件（支持多文件）进输入框：图片沿用原有草稿图片流程；文档读取内容存入项目根 .dsh-file-attachment 临时目录并插入 @绝对路径引用",
+  "keywords": [
+    "dsh",
+    "plugin",
+    "file-attachment",
+    "upload",
+    "drag-drop",
+    "multi-file"
+  ],
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -22,5 +30,11 @@
     "lib",
     "cordis.patch.yml"
   ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
   "license": "MIT"
 }
