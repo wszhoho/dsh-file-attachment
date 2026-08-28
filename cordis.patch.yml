@@ -1,0 +1,4 @@
+# dsh-fileAttachment 补丁行：挂载本插件（Host 半提供 fileAttachment remote 服务写临时目录；Client 半监听拖拽/粘贴）
+- insert:
+    - id: dsh-fileAttachment
+      name: '@local/dsh-fileAttachment'
