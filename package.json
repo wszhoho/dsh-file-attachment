@@ -1,6 +1,6 @@
 {
   "name": "@wszhoho/dsh-file-attachment",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "拖拽/粘贴文件（支持多文件）进输入框：图片沿用原有草稿图片流程；文档读取内容存入项目根 .dsh-file-attachment 临时目录并插入 @绝对路径引用",
   "keywords": [
     "dsh",
