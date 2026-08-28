@@ -30,21 +30,33 @@ DeepSeek Harness (dsh) web GUI 插件：在会话输入框中**拖入或 Ctrl+V 
 - 时间戳/文件名清洗同时对 Windows 与 POSIX 命名规则安全
 - Host 半直接 `node:fs/promises` 写字节，无 shell 依赖
 
-## 安装（官方 `dsh plugin` 方式，推荐）
+## 安装（官方 `dsh plugin` 方式）
 
-本仓库是一个标准 dsh 插件包（声明了 `dsh.bundle.patch`）。用官方 CLI 安装，pnpm 会自动处理依赖、并把本包加入 profile 的 `dsh.profile.bundles` 层：
+本仓库是一个标准 dsh 插件包（声明了 `dsh.bundle.patch`），并已发布为 npm 包 `@wszhoho/dsh-file-attachment`。用官方 CLI 安装，pnpm 会自动处理依赖、并把本包加入 profile 的 `dsh.profile.bundles` 层。`dsh plugin add` 的参数会转发给 profile 目录的 pnpm 执行，三种来源任选其一：
+
+### 从 npm 安装（普通用户推荐）
+
+```powershell
+dsh plugin --profile web add @wszhoho/dsh-file-attachment
+# 重启 web GUI：dsh web（或从托盘重启）
+```
+
+### 本地源码安装（开发用，边改边验）
 
 ```powershell
 # 在仓库父目录执行（<parent> 换成放置仓库的实际目录，如 E:\wszhoho）
 cd <parent>
 dsh plugin --profile web add ./dsh-file-attachment
-# 重启 web GUI：dsh web（或从托盘重启）
+# ./dsh-file-attachment 相对路径等价 pnpm link；改完 lib/*.js 后重启 dsh web 即生效
 ```
 
-- `dsh plugin add` 把参数转发给 profile 目录的 pnpm 执行，`./dsh-file-attachment` 相对路径等价 pnpm link；
-- 安装后自动进入 `dsh.profile.bundles`，无需手改 profile `package.json`；
-- 改完 `lib/*.js` 后重启 `dsh web` 即生效，适合边改边验；
-- 推送到 GitHub 后，其他人用 `dsh plugin --profile web add github:<你的账号>/dsh-file-attachment` 即可安装；
+### 从 GitHub 安装
+
+```powershell
+dsh plugin --profile web add github:<你的账号>/dsh-file-attachment
+```
+
+- 无论哪种来源，安装后都自动进入 `dsh.profile.bundles`，无需手改 profile `package.json`；
 - 升级：`dsh plugin --profile web update dsh-file-attachment`。
 
 ## 架构
