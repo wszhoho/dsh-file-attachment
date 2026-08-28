@@ -69,7 +69,6 @@ packages/dsh-fileAttachment/
 - Client 半保存用 `fetch('/dsh-fileAttachment/save', { method: 'POST', body: JSON.stringify({ name, data, sessionId }) })`，信封为 `{ ok, value | error }`。
 - 项目根 = 会话工作区（`session.header.cwd` → `sandboxPolicy.workspaceRoot` → `process.cwd()` 兜底）。
 - 50MB 上限两侧一致（client 跳过 + host 校验）。
-- 本插件取代了 `@local/file-drop` 的文档行为（原插件只插 `@原路径`，不落盘）；file-drop 包目录保留备查。
 
 ## License
 
