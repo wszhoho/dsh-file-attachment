@@ -57,7 +57,7 @@ dsh plugin --profile web add @wszhoho/dsh-file-attachment
 ### 本地源码安装（开发用，边改边验）
 
 ```powershell
-# 在仓库父目录执行（<parent> 换成放置仓库的实际目录，如 E:\wszhoho）
+# 在仓库父目录执行（<parent> 换成放置仓库的实际目录）
 cd <parent>
 dsh plugin --profile web add ./dsh-file-attachment
 # ./dsh-file-attachment 相对路径等价 pnpm link；改完 lib/*.js 后重启 dsh web 即生效
@@ -66,7 +66,7 @@ dsh plugin --profile web add ./dsh-file-attachment
 ### 从 GitHub 安装
 
 ```powershell
-dsh plugin --profile web add github:<你的账号>/dsh-file-attachment
+dsh plugin --profile web add github:wszhoho/dsh-file-attachment
 ```
 
 - 无论哪种来源，安装后都自动进入 `dsh.profile.bundles`，无需手改 profile `package.json`；
