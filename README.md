@@ -89,18 +89,6 @@ packages/dsh-file-attachment/
 - **通知**：`shell.overlay` frame-wide 浮动 toast（不参与文档流，不破坏布局），4 秒自动消失。
 - **浮层**：拖入任何文件时 capture 阶段拦截应用自带「拖入图片…」DropOverlay（文案面向图片，对文档是误导）。
 
-## 发布
-
-统一走 `release.ps1`（bump 版本 → 提交 → 推两个 remote `gitea` + `origin`(GitHub) → `npm publish`）：
-
-```powershell
-.\release.ps1                                              # patch 版本，完整发布
-.\release.ps1 -Bump minor                                  # minor / major 同理
-.\release.ps1 -Bump none -SkipPublish -Message "chore: x"  # 仅提交 + 推两个 remote，不 bump/不发布
-```
-
-`npm publish` 的 `files` 仅 `lib` + `cordis.patch.yml`；`release.ps1` 为开发工具，不进包。
-
 ## 开发说明
 
 - `lib/*.js`、`package.json`、`cordis.patch.yml`、`README.md` 当前均为 **UTF-8 无 BOM**（以仓库实测为准）；编辑时保持原编码，不引入 BOM。
