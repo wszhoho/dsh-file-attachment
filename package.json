@@ -1,6 +1,6 @@
 {
   "name": "@wszhoho/dsh-file-attachment",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "文件附件：输入框上传按钮 + 拖拽/粘贴文件（支持多文件）；图片走 dsh 原生图片草稿机制（addImages，不缩放/不落盘），文档落盘到 .dsh-file-attachment 并以芯片 @短名 引用（发送时还原 @绝对路径）；文档/代码/配置文件可上传类型可在设置页配置；支持 PC 与移动端浏览器",
   "keywords": [
     "dsh",
