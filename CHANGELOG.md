@@ -2,6 +2,20 @@
 
 本插件更新日志遵循 Keep a Changelog 风格，版本号遵循语义化版本。
 
+## [0.5.1] - 2026-09-11
+
+### 新增
+
+- **输入框内联附件条**：图片上传后直接在输入框内（composer 卡片内部、编辑区上方）显示缩略图预览，替代原输入框上方 dock 浮条（dock 条移除）。文件以类型图标 + 文件名条目显示，不做内容预览；条目可移除（同步清除草稿中对应 `@引用`），发送后自动清空。
+  - 实现：shadow dsh 原生 `conversation.input.attachments` 槽（priority -100），渲染自维护的附件登记表（attached map），不依赖 dsh 附件草稿链路，文本模型可正常发送。
+
+- **聊天区图片缩略图预览**：历史对话区中用户消息里的 `@图片路径`（png/jpg/jpeg/gif/webp/bmp）渲染为缩略图（经宿主 `/api/file?path=` 文件服务路由读取落盘图片），点击可放大查看（Lightbox 弹层，点击遮罩/× 关闭）。`@文件路径` 保持原芯片样式，自始至终不做预览。
+  - 实现：shadow dsh `conversation.chat.node` keyed `user` 渲染器（priority -100），扫描用户消息文本中的 `@路径` 引用分派渲染；原生 image/file 附件块（多模态模型场景）继续交 dsh 缩略图画廊 / 文件卡片渲染。
+
+### 变更
+
+- 移除 `conversation.input.dock` 上的文件条渲染（FaFileDock），保留 FaBridge（输入机桥，上传链路依赖）。
+
 ## [0.5.0] - 2026-09-11
 
 ### 新增
