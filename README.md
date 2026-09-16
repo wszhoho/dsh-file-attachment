@@ -1,6 +1,6 @@
 # dsh-file-attachment
 
-DeepSeek Harness (dsh) web GUI 插件：在会话输入框中**拖入或 Ctrl+V 粘贴文档/图片（支持多文件，一次可拖入/粘贴多个文件）**、或通过 **📎 附件按钮上传**时，浏览器端批量读取全文，保存到**当前会话工作区根目录下的 `.dsh-file-attachment/`**，并在输入框光标处插入 `@<保存副本绝对路径>` 引用。agent 读取 `@路径` 时直接读到落盘副本，不再依赖原始文件位置。
+DeepSeek Harness (dsh) web GUI 插件：在会话输入框中拖入或 Ctrl+V 粘贴文档/图片，或通过DSH本体 📎 附件按钮上传（插件已接管本体上传按钮），图片调用配置好的vlm模型自动进行图片识别。
 
 图片与文档走**同一条落盘管线**：图片在输入框**内联附件条**中以缩略图预览（点击放大），在聊天区渲染为**可点击放大的缩略图**；文档在附件条中以类型图标 + 文件名条目显示，在聊天区保持芯片样式。当前会话模型不支持多模态时，图片自动调用**可配置 VLM** 识别生成中文描述回填草稿，文本模型也能「看懂」图片。
 
@@ -21,7 +21,7 @@ DeepSeek Harness (dsh) web GUI 插件：在会话输入框中**拖入或 Ctrl+V 
 **设置页**：「设置 → 文件附件」页两部分：
 
 - **可上传类型**：按 文档 / 代码 / 配置文件 三类增删扩展名（小写、不带点），图片恒可发送；
-- **多模态识别参数（VLM）**：Base URL / API Key / 模型 / 思考模式开关（默认禁用），仅当前会话模型不支持多模态时调用，未填 API Key 时静默跳过。
+- **多模态识别参数（VLM）**：Base URL / API Key / 模型 / 思考模式开关（默认禁用）/ 超时时间（默认 60 秒），仅当前会话模型不支持多模态时调用，未填 API Key 时静默跳过。
 
 ![可上传类型设置](docs/settings-file-types.png)
 
@@ -97,7 +97,7 @@ packages/dsh-file-attachment/
 - **Host 半**：`webServer.register` 前缀路由 `/dsh-file-attachment`：
   - POST `/save`：接收 `{name, data(base64), sessionId}`，base64 解码后用 `node:fs/promises` 写盘到会话工作区 `.dsh-file-attachment/`，返回 `{ok, value:{path,dir,name,size}}`；
   - GET/POST `/config`：读写插件配置（可上传类型 + VLM 参数）；
-  - POST `/describe`：接收 `{dataUrl, prompt}`，调 VLM（OpenAI 兼容 `chat/completions`）识别图片，返回中文描述；
+  - POST `/describe`：接收 `{dataUrl, prompt}`，调 VLM（OpenAI 兼容 `chat/completions`）识别图片，返回中文描述与当前思考模式配置（`thinkingType`）；
   - `describe_image` 工具（Host 注册）：agent 需要理解 `@图片` 引用时调用——读已落盘图片 → VLM 识别 → 描述直接作为工具输出返回（UI 展示 + 模型可见）。
 - **Client 半**槽位：
   - `conversation.input.attachments`（shadow 原生附件条，priority -100）：**内联附件条**，渲染自维护的附件登记表——图片为 data URL 缩略图（点击放大）、文档为类型图标 + 文件名；条目可移除（同步清除草稿 `@引用`），发送后自动清空，不依赖 dsh 附件草稿链路（文本模型可正常发送）；
@@ -113,7 +113,7 @@ packages/dsh-file-attachment/
 - `lib/*.js`、`package.json`、`cordis.patch.yml`、`README.md` 当前均为 **UTF-8 无 BOM**（以仓库实测为准）；编辑时保持原编码，不引入 BOM。
 - Host 半用 `webServer.register({ kind: 'prefix', path: '/dsh-file-attachment', handler })` 提供 `/save`、`/config`、`/describe` 三个路由，并经 `tools.register` 注册 `describe_image` 工具；纯 ESM 无构建，不依赖装饰器/远程反射。
 - Client 半保存用 `fetch('/dsh-file-attachment/save', { method: 'POST', body: JSON.stringify({ name, data, sessionId }) })`，信封为 `{ ok, value | error }`。
-- VLM 走 OpenAI 兼容 `chat/completions`（Base URL / API Key / 模型 / 思考模式可在设置页配置，默认关闭思考模式）；未填 API Key 时识别静默跳过，不影响落盘。
+- VLM 走 OpenAI 兼容 `chat/completions`（Base URL / API Key / 模型 / 思考模式 / 超时时间可在设置页配置，思考模式默认关闭，超时默认 60 秒）；请求按 MiMo 官方格式发送 `thinking: { type: "enabled"|"disabled" }`（扁平 `thinkingType` 会被 API 忽略，而 mimo-v2.5 默认开启深度思考，导致识别极慢——实测 206 秒 vs 关闭后 22~73 秒，服务延迟波动较大，若偶发超时可调大）；超时后工具调用中止并明确报错「VLM 请求超时（N 秒）」，不再挂死会话；`describe_image` 工具输出 JSON 附带 `thinkingType`（enabled/disabled），直观展示当前思考模式配置。未填 API Key 时识别静默跳过，不影响落盘。
 - 项目根 = 会话工作区（`session.header.cwd` → `sandboxPolicy.workspaceRoot` → `process.cwd()` 兜底）。
 - 50MB 上限两侧一致（client 跳过 + host 校验）。
 

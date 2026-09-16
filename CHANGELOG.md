@@ -2,6 +2,18 @@
 
 本插件更新日志遵循 Keep a Changelog 风格，版本号遵循语义化版本。
 
+## [0.5.4] - 2026-09-14
+
+### 新增
+
+- **图片识别超时时间配置（默认 60 秒）**：VLM 识别请求带超时控制（AbortController），超时后明确报错「VLM 请求超时（N 秒），可在设置→文件附件调大超时时间」，不再无限挂起（此前 VLM 慢或卡住会导致识图工具长时间占用、会话卡死，只能重启 dsh 恢复）。超时时间可在「设置 → 文件附件 → 多模态识别参数」配置，单位秒，范围 1~600，默认 60（实测 VLM 延迟波动大，12~73 秒，30 秒会误杀多数请求）。
+
+### 变更
+
+- **`describe_image` 工具输出 JSON 附带思考模式状态**：工具返回值新增 `thinkingType` 字段（`enabled`=开启 / `disabled`=关闭，来自 VLM 配置），UI 渲染「图片识别结果：…（思考模式：开启/关闭）」直观可见；`/describe` 路由响应同步附带 `thinkingType`。
+- **修复思考模式参数格式（MiMo v2.5）**：请求 VLM 的 payload 由扁平 `thinkingType` 改为 MiMo 官方嵌套格式 `thinking: { type: "enabled"|"disabled" }`。此前扁平参数被 API 静默忽略，而 `mimo-v2.5` **默认开启深度思考**——实测扁平 `thinkingType:"disabled"` 的识别耗时高达 **206 秒**（思考未关闭，reasoning_tokens=167），官方 `thinking:{"type":"disabled"}` 仅约 22 秒（reasoning_tokens=0）。这是「图片识别超时 / 会话卡死」的根因之一，已修复。
+- **思考参数适配器：按模型名称适配多家 VLM**：新增 `buildThinkingParams` 按**模型名称**（非 `baseURL` host——中转站/代理转发时 host 不可靠）选择思考开关参数形式：仅思考模型（名含 `-thinking`、`glm-5.3*`、`kimi-k3`、`kimi-k2.7-code`）不传任何参数（服务端默认开思考，传 `disabled` 会报错）；通义千问（名含 `qwen`/`qvq`）用扁平 `enable_thinking`；其余（小米 MiMo / DeepSeek / 智谱 GLM / Kimi 官方）用嵌套 `thinking:{type}`。此前硬编码嵌套格式仅对 MiMo 等嵌套系正确，换 Qwen VL 等会失效，现已覆盖主流多模态模型。
+
 ## [0.5.3] - 2026-09-12
 
 ### 新增
