@@ -23,7 +23,7 @@ DeepSeek Harness (dsh) web GUI 插件：在会话输入框中拖入或 Ctrl+V �
 - **可上传类型**：按 文档 / 代码 / 配置文件 三类增删扩展名（小写、不带点），图片恒可发送；
 - **多模态识别参数（VLM）**：Base URL / API Key / 模型 / 思考模式开关（默认禁用）/ 超时时间（默认 60 秒），仅当前会话模型不支持多模态时调用，未填 API Key 时静默跳过。
 
-![可上传类型设置](docs/settings-file-types.png)
+![可上传类型设置、多模态API设置](docs/settings-file-types.jpg)
 
 ## 行为一览
 
