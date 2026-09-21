@@ -2,6 +2,12 @@
 
 本插件更新日志遵循 Keep a Changelog 风格，版本号遵循语义化版本。
 
+## [0.5.9] - 2026-09-21
+
+### 修复
+
+- **移动端双📎按钮兼容**：dsh-web-mobile 插件（移动端适配）向 composer 的 `conversation.input.left` 槽注入自己的文件回形针按钮，其设计前提是 host 0.1.6-alpha.2+ 已删除 composer 原生📎；但当前 host（0.1.5-rc.x）仍渲染原生📎按钮，移动端窄屏下于是并排出现两枚回形针（PC 宽屏被 dsh-web-mobile 的 `pointer:fine` 隐藏规则覆盖，故仅移动端可见）。本插件现按 host 原生📎是否存在自动对调：原生📎在（0.1.5-rc.x）→ 内联 `display:none!important` 隐藏 dsh-web-mobile 注入的那枚（保留原生位置）；原生📎不在（0.1.6+，未来 host 移除后）→ 移除内联声明交还 CSS，让 mobile 注入按钮作为唯一入口。两枚按钮点击后都触发 host 的 hidden `input[type=file]`，其 change 事件已被本插件劫持走 runBatch 管线，上传功能不受影响。判断依据：host 原生📎是 card 内 hidden fileInput 的前邻 button，0.1.6+ 删除📎后该前邻不再存在，据此区分 host 代际。
+
 ## [0.5.4] - 2026-09-14
 
 ### 新增
