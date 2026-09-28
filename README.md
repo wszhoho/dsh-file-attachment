@@ -1,5 +1,25 @@
 # dsh-file-attachment
 
+<p align="right"><a href="#english">English</a> | 中文</p>
+
+[![npm version](https://img.shields.io/npm/v/@wszhoho/dsh-file-attachment?label=npm)](https://www.npmjs.com/package/@wszhoho/dsh-file-attachment)
+[![weekly downloads](https://img.shields.io/npm/dw/@wszhoho/dsh-file-attachment?label=downloads%2Fweek)](https://www.npmjs.com/package/@wszhoho/dsh-file-attachment)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-blue)](https://nodejs.org)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+
+> 文件附件插件 for [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepseek-ai/dsh) Web GUI：拖拽 / `Ctrl+V` 粘贴 / 📎 按钮上传文件或图片，输入框内联缩略图，聊天区可点击放大，自动插入 `@绝对路径` 引用；非多模态模型可配置 VLM 生成图片描述。
+>
+> **File attachment plugin for DeepSeek Harness (DSH) web GUI:** drag and drop, paste, or upload files and images from the chat composer; inline thumbnails, clickable chat image previews, `@absolute-path` references, and optional VLM-generated image descriptions for non-multimodal models.
+
+## Quick start
+
+```powershell
+dsh plugin --profile web add @wszhoho/dsh-file-attachment
+dsh web
+```
+
+完整安装方式、行为说明与架构见下文。
+
 DeepSeek Harness (dsh) web GUI 插件：在会话输入框中拖入或 Ctrl+V 粘贴文档/图片，或通过DSH本体 📎 附件按钮上传（插件已接管本体上传按钮），图片显示在消息区，并自动调用配置好的vlm模型进行图片识别。
 
 图片与文档走**同一条落盘管线**：图片在输入框**内联附件条**中以缩略图预览（点击放大），在聊天区渲染为**可点击放大的缩略图**；文档在附件条中以类型图标 + 文件名条目显示，在聊天区保持芯片样式。当前会话模型不支持多模态时，图片自动调用**可配置 VLM** 识别生成中文描述回填草稿，文本模型也能「看懂」图片。
@@ -122,6 +142,29 @@ packages/dsh-file-attachment/
 ## Star
 
 如果这个插件帮到了你，欢迎到 [GitHub 仓库](https://github.com/wszhoho/dsh-file-attachment) 点个 ⭐ Star，感谢支持！
+
+## English
+
+**dsh-file-attachment** is a [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepseek-ai/dsh) web GUI plugin for adding file and image attachments to the chat composer. It lets you drag and drop files, paste from the clipboard, or use the native DSH paperclip upload button to attach documents, code files, config files, and images.
+
+Key capabilities:
+
+- Unified local storage pipeline for images and documents under `.dsh-file-attachment/`.
+- Inserts `@absolute-path` references into the composer, so text-only models can still use attached files.
+- Inline attachment preview in the input box: image thumbnails and file entries.
+- Chat rendering: user-message image paths become clickable thumbnails with a lightbox; file paths remain compact chips.
+- Multi-file upload, same-name conflict handling, and a 50MB per-file guard.
+- Optional VLM integration for non-multimodal models: OpenAI-compatible `chat/completions` endpoints can generate Chinese image descriptions and fill them into the draft.
+- Works on desktop and mobile browsers.
+
+Install with the DSH CLI:
+
+```powershell
+dsh plugin --profile web add @wszhoho/dsh-file-attachment
+dsh web
+```
+
+For detailed behavior, settings, architecture, and development notes, see the Chinese documentation above.
 
 ## License
 
