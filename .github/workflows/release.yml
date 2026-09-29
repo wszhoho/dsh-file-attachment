@@ -1,0 +1,123 @@
+# 发版工作流：一个 workflow 合并完成「同步 package.json 版本 + 打 tag + 发布 GitHub Release（带 notes）」
+# 部署位置：.github/workflows/release.yml
+# 用法：GitHub → Actions → release → Run workflow → 输入版本号（如 0.5.13）
+#       （notes 可选；留空则自动从 CHANGELOG.md 取该版本段，取不到则用 commit 列表）
+# 之后照常 npm publish 即可。
+# 说明：dshmarket 的更新日志靠 awesome-dsh-plugin 目录每日探测本仓库的 Release，
+#       发布后一般次日，更新弹框即显示「更新内容」（release notes 正文）。
+
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号，如 0.5.13（自动同步 package.json、打 tag v0.5.13 并发布 Release）"
+        required: true
+        type: string
+      notes:
+        description: "Release 说明（可选，留空则自动从 CHANGELOG.md 取该版本段；再取不到用 commit 列表）"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # 完整历史，供 commit 列表兜底
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 配置 git 身份
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: 同步 package.json 版本
+        run: |
+          VER="${{ github.event.inputs.version }}"
+          VER="${VER#v}"; VER="${VER#V}"
+          CUR=$(node -p "require('./package.json').version")
+          if [ "$CUR" != "$VER" ]; then
+            sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VER\"/" package.json
+            git add package.json
+            git commit -m "chore(release): $VER"
+            git push origin HEAD || echo "⚠️ 推送 version 失败（分支可能受保护），请手动确认 package.json 已是 $VER"
+            echo "package.json: $CUR -> $VER（已提交推送）"
+          else
+            echo "package.json 已是 $VER，跳过"
+          fi
+
+      - name: 打 tag（若不存在）
+        run: |
+          VER="${{ github.event.inputs.version }}"
+          VER="${VER#v}"; VER="${VER#V}"
+          TAG="v$VER"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "tag $TAG 已存在，复用"
+          else
+            git tag -a "$TAG" -m "release: $VER"
+            git push origin "$TAG"
+            echo "已创建并推送 tag $TAG"
+          fi
+
+      - name: 生成 release notes
+        run: |
+          VER="${{ github.event.inputs.version }}"
+          VER="${VER#v}"; VER="${VER#V}"
+          NOTES=/tmp/notes.md
+          if [ -n "${{ github.event.inputs.notes }}" ]; then
+            printf '%s\n' "${{ github.event.inputs.notes }}" > "$NOTES"
+            echo "使用手动 notes"
+          else
+            {
+              echo "# $TAG"
+              echo
+            } > "$NOTES"
+            if [ -f CHANGELOG.md ]; then
+              awk -v v="[$VER]" '
+                /^## \[/ { if (found) exit; if (index($0, v)) { found=1; next } }
+                found { print }
+              ' CHANGELOG.md > /tmp/chg.md
+              if [ -s /tmp/chg.md ]; then
+                cat /tmp/chg.md >> "$NOTES"
+                echo "使用 CHANGELOG.md 的 [$VER] 段"
+              else
+                {
+                  echo "### 本次更新"
+                  echo
+                  PREV=$(git tag --list --sort=-v:refname | grep -vxF "$TAG" | head -1)
+                  if [ -n "$PREV" ]; then
+                    git log "$PREV..HEAD" --no-merges --pretty=format:"- %s"
+                  else
+                    git log -n 15 --no-merges --pretty=format:"- %s"
+                  fi
+                  echo
+                } >> "$NOTES"
+                echo "CHANGELOG.md 无 [$VER] 段，改用 commit 列表"
+              fi
+            else
+              {
+                echo "### 最近提交"
+                echo
+                git log -n 15 --no-merges --pretty=format:"- %s"
+                echo
+              } >> "$NOTES"
+            fi
+          fi
+          cp "$NOTES" /tmp/notes-final.md
+          echo "----- release notes -----"
+          cat /tmp/notes-final.md
+
+      - name: 发布 GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          gh release create "$TAG" --title "$TAG" --notes-file /tmp/notes-final.md
+          echo "✅ Release $TAG 发布完成"
