@@ -2,6 +2,12 @@
 
 本插件更新日志遵循 Keep a Changelog 风格，版本号遵循语义化版本。
 
+## [0.6.0] - 2026-10-10
+
+### 新增
+
+- **describe_image 多模态能力门控**：会话开始（`agent/created`）与模型切换（session 事件 `model/selection`）时，经 `llm.resolveModelInfo()` 读取所选模型的 `inputModalities`；声明支持 `image` 输入的会话通过 `agent.ctx.tools.restrict({ deny: ['describe_image'] })` 仅对该 agent 隐藏该工具（模型改用原生 `read_image` 直接看图，不再中转 VLM），纯文本或能力未知的会话保留该工具作 VLM 兜底。隐藏为 scoped 操作，不影响其他会话；disposer 幂等管理，agent 销毁随 scoped world 回退。设置页提示文案同步更新。
+
 ## [0.5.13] - 2026-09-28
 
 ### 变更
