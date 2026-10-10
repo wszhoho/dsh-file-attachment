@@ -2,6 +2,12 @@
 
 本插件更新日志遵循 Keep a Changelog 风格，版本号遵循语义化版本。
 
+## [0.6.2] - 2026-10-10
+
+### 修复
+
+- **模型切换后门控仍按旧模型判定**：`agent.options` 只是创建时的快照，不会随 `model/selection` 更新（实际选择是经 waterfall listener 注入请求的可变 selection）。上一版 `evaluate()` 只读 options，导致会话默认多模态模型时 deny 了 `describe_image`，切到纯文本模型后仍按旧值维持隐藏。现 `evaluate(agent, sel?)` 按三级优先级取权威路由：durable `model/selection` 事件的 data > `session.requestHeader().config`（最近一次请求的实际路由）> `agent.options`（仅创建兜底）；并新增 `[dsh-file-attachment] vision-gate: <model> cap=<…> deny=[…]` 诊断日志，能力判定过程可直接在运行日志核对。
+
 ## [0.6.1] - 2026-10-10
 
 ### 修复
