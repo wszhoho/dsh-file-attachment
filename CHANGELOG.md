@@ -2,6 +2,12 @@
 
 本插件更新日志遵循 Keep a Changelog 风格，版本号遵循语义化版本。
 
+## [0.6.1] - 2026-10-10
+
+### 修复
+
+- **纯文本模型不再出现 `read_image` 报错**：0.6.0 的门控只隐藏了多模态会话的 `describe_image`，但纯文本会话里 host 原生 `read_image` 仍然可见——模型误调它必然抛「model does not declare image input」错。现改为对称双向门控：明确声明不含 `image` 输入的会话同时对该 agent `restrict({ deny: ['read_image'] })`（该工具对其毫无用处），仅留 `describe_image` 作 VLM 兜底；支持图片的会话仍隐藏 `describe_image`；能力未知（catalog absent / 查询失败）时两边都不动。deny 集随模型切换原子互换，disposer 幂等管理。设置页提示文案同步更新。
+
 ## [0.6.0] - 2026-10-10
 
 ### 新增
