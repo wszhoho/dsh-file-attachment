@@ -15,7 +15,6 @@
 
 ```powershell
 dsh plugin --profile web add @wszhoho/dsh-file-attachment
-dsh web
 ```
 
 完整安装方式、行为说明与架构见下文。
@@ -161,7 +160,6 @@ Install with the DSH CLI:
 
 ```powershell
 dsh plugin --profile web add @wszhoho/dsh-file-attachment
-dsh web
 ```
 
 For detailed behavior, settings, architecture, and development notes, see the Chinese documentation above.
