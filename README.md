@@ -2,16 +2,35 @@
 
 <p align="right"><a href="#english">English</a> | 中文</p>
 
+<div align="center">
+
 [![npm version](https://img.shields.io/npm/v/@wszhoho/dsh-file-attachment?label=npm)](https://www.npmjs.com/package/@wszhoho/dsh-file-attachment)
 [![weekly downloads](https://img.shields.io/npm/dw/@wszhoho/dsh-file-attachment?label=downloads%2Fweek)](https://www.npmjs.com/package/@wszhoho/dsh-file-attachment)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-blue)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-> 文件附件插件 for [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepseek-ai/dsh) Web GUI：拖拽 / `Ctrl+V` 粘贴 / 📎 按钮上传文件或图片，输入框内联缩略图，聊天区可点击放大，自动插入 `@绝对路径` 引用；非多模态模型可配置 VLM 生成图片描述。
->
+**文件附件插件 for [DeepSeek Harness (DSH)](https://www.npmjs.com/package/@deepseek-ai/dsh) Web GUI**
+
+拖拽 / `Ctrl+V` 粘贴 / 📎 按钮上传 · 内联缩略图 · `@绝对路径` 引用 · VLM 图片识别
+
+</div>
+
 > **File attachment plugin for DSH web GUI:** drag, paste, or upload files and images from the composer; inline thumbnails, clickable previews, `@absolute-path` references, and optional VLM-generated image descriptions.
 
-## Quick start
+## 目录
+
+- [快速开始](#快速开始)
+- [核心能力](#核心能力)
+- [处理流程](#处理流程)
+- [界面](#界面)
+- [行为一览](#行为一览)
+- [存储细节](#存储细节)
+- [安装](#安装)
+- [架构](#架构)
+- [开发说明](#开发说明)
+- [English](#english)
+
+## 快速开始
 
 ```powershell
 dsh plugin --profile web add @wszhoho/dsh-file-attachment
@@ -21,11 +40,27 @@ dsh plugin --profile web add @wszhoho/dsh-file-attachment
 
 ## 核心能力
 
-- **三种入口**：拖入、`Ctrl+V` 粘贴、接管 dsh 原生 📎 附件按钮（加号右侧、modes 左侧，可多选）；PC 与移动端浏览器均适用。
-- **统一落盘管线**：图片与文档同走一条链路，保存到 `<会话工作区>/.dsh-file-attachment/<日期>/<文件名>`；同名冲突追加 `-N` 绝不覆盖；单文件上限 50MB。
-- **`@绝对路径` 引用**：落盘后在光标处插入 chip，文本模型也能「看懂」附件。
-- **预览**：输入框内联附件条——图片为缩略图、文档为类型图标 + 文件名，条目可移除并同步清除对应引用，发送后自动清空；聊天区图片渲染为可点击放大的缩略图（Lightbox），文件保持芯片样式。
-- **VLM 识别**：当前会话模型不支持多模态时，自动调用 OpenAI 兼容接口生成中文图片描述回填草稿（仅注入模型上下文，不进对话界面）；agent 也可主动调用 `describe_image` 工具识别已落盘图片（含历史消息中的 `@图片` 引用）。
+| 能力 | 说明 |
+| :--- | :--- |
+| 📥 **三种入口** | 拖入、`Ctrl+V` 粘贴、接管 dsh 原生 📎 附件按钮（加号右侧、modes 左侧，可多选）；PC 与移动端浏览器均适用 |
+| 🗂️ **统一落盘管线** | 图片与文档同走一条链路，保存到 `<会话工作区>/.dsh-file-attachment/<日期>/<文件名>`；同名冲突追加 `-N` 绝不覆盖；单文件上限 50MB |
+| 🔗 **`@绝对路径` 引用** | 落盘后在光标处插入 chip，文本模型也能「看懂」附件 |
+| 🖼️ **双区预览** | 输入框内联附件条（图片缩略图 / 文档类型图标 + 文件名，可移除并同步清除引用）；聊天区图片渲染为可点击放大的缩略图（Lightbox） |
+| 🤖 **VLM 识别** | 非多模态模型下自动调用 OpenAI 兼容接口生成中文图片描述回填草稿（仅注入模型上下文）；agent 可主动调用 `describe_image` 工具 |
+
+## 处理流程
+
+```mermaid
+flowchart LR
+    A["📥 拖入 / 粘贴 / 📎 选择"] --> B{"文件校验<br/>类型 · 大小 ≤50MB"}
+    B -- "不合规" --> X["跳过并 toast 提示"]
+    B -- "通过" --> C["读全文 → base64 → Host 落盘"]
+    C --> D[(".dsh-file-attachment/YYYY-MM-DD/文件名<br/>同名追加 -N")]
+    D --> E["光标处插入 @绝对路径 chip"]
+    E --> F{"模型支持多模态？"}
+    F -- "否 · 已配 VLM" --> G["VLM 生成中文描述<br/>仅注入模型上下文"]
+    F -- "是 / 未配 VLM" --> H["随消息正常发送"]
+```
 
 ## 界面
 
@@ -35,7 +70,12 @@ dsh plugin --profile web add @wszhoho/dsh-file-attachment
 
 ![VLM 图片识别](docs/vlm-identify.png)
 
-**设置页**（「设置 → 文件附件」）：**可上传类型**按文档 / 代码 / 配置文件三类增删扩展名（小写不带点，图片恒可发送）；**VLM 参数** Base URL / API Key / 模型 / 思考模式开关（默认禁用）/ 超时时间（默认 60 秒），未填 API Key 时静默跳过。
+**设置页**（「设置 → 文件附件」）：
+
+| 设置组 | 内容 |
+| :--- | :--- |
+| **可上传类型** | 按文档 / 代码 / 配置文件三类增删扩展名（小写不带点，图片恒可发送） |
+| **VLM 参数** | Base URL / API Key / 模型 / 思考模式开关（默认禁用）/ 超时时间（默认 60 秒）；未填 API Key 时静默跳过 |
 
 ![可上传类型设置、多模态API设置](docs/settings-file-types.jpg)
 
@@ -85,6 +125,30 @@ dsh plugin --profile web add github:wszhoho/dsh-file-attachment
 └── lib/
     ├── index.js          # Host 半：webServer 路由（/save /config /describe）+ describe_image 工具
     └── client.js         # Client 半：document 级 capture drop/paste 监听 + 📎 按钮接管 + 槽组件
+```
+
+```mermaid
+flowchart TB
+    subgraph client["Client 半 · lib/client.js"]
+        C1["capture 阶段拦截<br/>drop / paste / 📎 fileInput"]
+        C2["shadow 内联附件条<br/>conversation.input.attachments"]
+        C3["shadow 用户消息渲染器<br/>聊天区图片缩略图"]
+        C4["shell.overlay 浮动 toast"]
+    end
+    subgraph host["Host 半 · lib/index.js"]
+        H1["POST /save<br/>base64 → node:fs/promises 写盘"]
+        H2["GET/POST /config<br/>可上传类型 · VLM 配置"]
+        H3["POST /describe"]
+        H4["tools.register<br/>describe_image"]
+    end
+    VLM[("OpenAI 兼容 VLM<br/>MiMo 格式")]
+    C1 -- "文件 base64" --> H1
+    C2 -.-> H2
+    C1 -.-> C4
+    H3 --> VLM
+    H4 --> VLM
+    C3 -- "GET /api/file?path=" --> FS[(".dsh-file-attachment/ 落盘文件")]
+    H1 --> FS
 ```
 
 - **Host 半**：前缀路由 `/dsh-file-attachment`——POST `/save`（base64 解码后用 `node:fs/promises` 写盘）、GET/POST `/config`（读写可上传类型与 VLM 配置）、POST `/describe`（调 VLM 返回中文描述与思考模式配置）；另经 `tools.register` 注册 `describe_image` 工具。响应信封 `{ ok, value | error }`。
