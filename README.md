@@ -43,7 +43,7 @@ dsh plugin --profile web add @wszhoho/dsh-file-attachment
 | 能力 | 说明 |
 | :--- | :--- |
 | 📥 **三种入口** | 拖入、`Ctrl+V` 粘贴、接管 dsh 原生 📎 附件按钮（加号右侧、modes 左侧，可多选）；PC 与移动端浏览器均适用 |
-| 🗂️ **统一落盘管线** | 图片与文档同走一条链路，保存到 `<会话工作区>/.dsh-file-attachment/<日期>/<文件名>`；同名冲突追加 `-N` 绝不覆盖；单文件上限 50MB |
+| 🗂️ **统一落盘管线** | 图片与文档同走一条链路，平铺保存到 `<会话工作区>/.dsh-file-attachment/<文件名>`；同名冲突追加 `-N` 绝不覆盖；同名同大小自动去重复用；单文件上限 50MB |
 | 🔗 **`@绝对路径` 引用** | 落盘后在光标处插入 chip，文本模型也能「看懂」附件 |
 | 🖼️ **双区预览** | 输入框内联附件条（图片缩略图 / 文档类型图标 + 文件名，可移除并同步清除引用）；聊天区图片渲染为可点击放大的缩略图（Lightbox） |
 | 🤖 **VLM 识别** | 非多模态模型下自动调用 OpenAI 兼容接口生成中文图片描述回填草稿（仅注入模型上下文）；agent 可主动调用 `describe_image` 工具 |
@@ -95,7 +95,8 @@ flowchart LR
 
 ## 存储细节
 
-- **命名**：`.dsh-file-attachment/YYYY-MM-DD/<清洗后文件名>`（如 `.dsh-file-attachment/2026-02-11/说明.docx`），同日同名在扩展名前追加 `-N`。
+- **命名**：`.dsh-file-attachment/<清洗后文件名>`（如 `.dsh-file-attachment/说明.docx`，0.7.0 起平铺、不再按日期分子目录），同名在扩展名前追加 `-N`。
+- **去重**：上传前先查重（键 = 文件名 + 文件大小，元数据级判定），命中直接复用已有文件路径、零字节上传；`.dsh-file-attachment/.index.json` 为去重索引（自动维护，删除后自动重建）。历史 `<日期>/` 子目录中的旧文件不受影响，引用保持有效。
 - **根目录** = 当前会话工作区（回退顺序：`session.header.cwd` → `sandboxPolicy.workspaceRoot` → `process.cwd()`），每个项目各自维护自己的 `.dsh-file-attachment/`。
 - **跨平台**：保存路径用 `path.join` 自适应分隔符；文件名清洗对 Windows / POSIX 均安全；Host 半经 `node:fs/promises` 直接写字节，无 shell 依赖。
 
